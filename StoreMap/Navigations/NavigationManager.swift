@@ -134,9 +134,7 @@ final class NavigationManager {
                             print("No multi-stop directions found for: \(locationNames.joined(separator: " -> "))")
                             return
                         }
-                        
                         self.draw(directionsList: directions)
-                        
                     case .failure(let error):
                         print("getDirectionsMultiDestination error: \(error)")
                     }

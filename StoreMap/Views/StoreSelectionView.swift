@@ -40,7 +40,6 @@ struct StoreSelectionView: View {
                     if selectedStores.contains(
                         store.locationName
                     ) {
-
                         Image(systemName: "checkmark.circle.fill")
                     }
                 }
