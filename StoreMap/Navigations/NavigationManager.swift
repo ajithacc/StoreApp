@@ -9,7 +9,7 @@ import Foundation
 import Mappedin
 import UIKit
 
-// Model structure for each pointers
+// MARK: - Models
 
 struct StoreDetails: Identifiable {
     let name: String
@@ -21,11 +21,11 @@ struct StoreDetails: Identifiable {
     }
 }
 
-// Class used for handling navigations
+// MARK: - Navigation Manager
 
 final class NavigationManager {
     
-    // For paths
+    // MARK: - Private Types
     
     private struct RouteLeg {
         let destination: EnterpriseLocation
@@ -33,16 +33,17 @@ final class NavigationManager {
         let distance: Double
     }
     
-    // Store details
-    
     private struct StoreMarkerDetails {
         let details: StoreDetails
         let coordinate: Coordinate
     }
+    // MARK: - Properties
     
     private let mapView: MapView
     private let onStoreSelected: (StoreDetails?) -> Void
     private var storeMarkerDetails: [StoreMarkerDetails] = []
+    
+    // MARK: - Initialization
     
     init(
         mapView: MapView,
@@ -53,7 +54,7 @@ final class NavigationManager {
         registerMarkerTapHandler()
     }
     
-    // function for routing the different directions
+    // MARK: - Public Route Drawing Methods
     
     func drawRoute(
         from originName: String,
@@ -191,6 +192,8 @@ final class NavigationManager {
         }
     }
     
+    // MARK: - Private Route Drawing Methods
+    
     private func draw(directions: Directions) {
         let pathOptions = AddPathOptions(interactive: true)
         let navigationOptions = NavigationOptions(pathOptions: pathOptions)
@@ -267,6 +270,8 @@ final class NavigationManager {
         }
     }
     
+    // MARK: - Marker Management Methods
+    
     private func drawColoredRoute(legs: [RouteLeg]) {
         guard !legs.isEmpty else { return }
         
@@ -289,6 +294,7 @@ final class NavigationManager {
         addRouteMarkers(for: legs)
         focusCamera(on: legs)
     }
+    
     private func addRouteMarkers(for legs: [RouteLeg]) {
 
         guard let firstCoordinate = legs.first?.directions.coordinates.first else {
@@ -297,7 +303,6 @@ final class NavigationManager {
 
         storeMarkerDetails = []
 
-        // Entrance Marker
         addMarker(
             title: "",
             subtitle: nil,
@@ -325,20 +330,11 @@ final class NavigationManager {
 
             let html: String
 
-            // Apple -> map asset
             if leg.destination.name == "Apple" {
-
-                html = markerHTML(
-                    imageName: "map"
-                )
-
+                html = markerHTML(imageName: "map")
             } else {
                 let randomCount = Int.random(in: 2...9)
-
-                html = markerHTML(
-                    imageName: "location",
-                    count: randomCount
-                )
+                html = markerHTML(imageName: "location", count: randomCount)
             }
 
             mapView.markers.add(
@@ -349,19 +345,15 @@ final class NavigationManager {
                     rank: .tier(.alwaysVisible)
                 )
             ) { result in
-
                 switch result {
-
                 case .success:
                     print("Marker Added")
-
                 case .failure(let error):
                     print("Marker Error: \(error)")
                 }
             }
         }
         
-        // Ensure final destination has an explicit annotation
         if let finalCoordinate = legs.last?.directions.coordinates.last {
             addMarker(
                 title: "End",
@@ -372,6 +364,9 @@ final class NavigationManager {
             )
         }
     }
+    
+    // MARK: - Marker HTML Helpers
+    
     private func base64Image(named imageName: String) -> String? {
 
         guard let image = UIImage(named: imageName),
@@ -513,6 +508,9 @@ final class NavigationManager {
             )
         ) { _ in }
     }
+    
+    // MARK: - Tap Gesture Handling
+    
     private func registerMarkerTapHandler() {
         mapView.on(Events.click) { [weak self] clickPayload in
             guard let self, let clickPayload else { return }
@@ -542,6 +540,8 @@ final class NavigationManager {
         
         return latitudeDifference * latitudeDifference + longitudeDifference * longitudeDifference
     }
+    
+    // MARK: - Camera and Utility Methods
     
     private func focusCamera(on legs: [RouteLeg]) {
         let targets = legs.flatMap { leg in
