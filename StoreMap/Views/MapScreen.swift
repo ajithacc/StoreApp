@@ -9,31 +9,31 @@ import Foundation
 import SwiftUI
 
 struct StoreDetailsSheet: View {
-
+    
     let store: StoreDetails
-
+    
     private var descriptionText: String {
         store.description.isEmpty ? "No description available." : store.description
     }
-
+    
     var body: some View {
-
+        
         VStack(alignment: .leading, spacing: 16) {
-
+            
             Text("Stop \(store.stopNumber)")
                 .font(.caption)
                 .fontWeight(.semibold)
                 .foregroundStyle(.blue)
-
+            
             Text(store.name)
                 .font(.title2)
                 .fontWeight(.bold)
-
+            
             Text(descriptionText)
                 .font(.body)
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
-
+            
             Spacer()
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -42,33 +42,72 @@ struct StoreDetailsSheet: View {
 }
 
 struct MapScreen: View {
-
+    
     @StateObject private var vm = MapViewModel()
-
+    
     var body: some View {
-
+        
         ZStack {
-
+            
             MappedinMapView(
+                
                 mapView: vm.mapView
+                
             )
             .ignoresSafeArea()
-
+            
             if vm.isLoading {
-
+                
                 ProgressView()
                     .scaleEffect(2)
             }
         }
-        .sheet(item: $vm.selectedStore) { store in
-            StoreDetailsSheet(store: store)
-                .presentationDetents([.medium])
-                .presentationDragIndicator(.visible)
+        .sheet(
+            isPresented: $vm.showStoreSelectionSheet
+        ) {
+            
+            StoreSelectionView(
+                stores: vm.availableStores,
+                selectedStores: vm.selectedStores,
+                onToggle: { store in
+                    vm.toggleStoreSelection(store)
+                },
+                onStartRoute: {
+                    vm.startShoppingRoute()
+                    vm.showStoreSelectionSheet = false
+                }
+            )
+            .presentationDetents([
+                .fraction(0.4)
+            ])
+            .presentationDragIndicator(.visible)
         }
+        // Existing Marker Details Sheet
+        
+        .sheet(item: $vm.selectedStore) { store in
+            
+            StoreDetailsSheet(
+                
+                store: store
+                
+            )
+            
+            .presentationDetents([
+                
+                .medium
+                
+            ])
+            
+            .presentationDragIndicator(.visible)
+            
+        }
+        
         .onAppear {
-
+            
             if !vm.isMapReady {
+                
                 vm.loadMap()
+                
             }
         }
     }

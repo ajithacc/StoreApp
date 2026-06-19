@@ -7,6 +7,7 @@
 
 import Foundation
 import Mappedin
+import UIKit
 
 // Model structure for each pointers
 
@@ -290,22 +291,29 @@ final class NavigationManager {
         addRouteMarkers(for: legs)
         focusCamera(on: legs)
     }
-    
     private func addRouteMarkers(for legs: [RouteLeg]) {
-        guard let firstCoordinate = legs.first?.directions.coordinates.first else { return }
-        
+
+        guard let firstCoordinate = legs.first?.directions.coordinates.first else {
+            return
+        }
+
         storeMarkerDetails = []
-        
+
+        // Entrance Marker
         addMarker(
-            title: "Start",
-            subtitle: "Entrance",
+            title: "",
+            subtitle: nil,
             color: "#1871fb",
-            target: firstCoordinate
+            target: firstCoordinate,
+            compact: true
         )
-        
+
         for (index, leg) in legs.enumerated() {
-            guard let coordinate = leg.directions.coordinates.last else { continue }
             
+            guard let coordinate = leg.directions.coordinates.last else {
+                continue
+            }
+
             storeMarkerDetails.append(
                 StoreMarkerDetails(
                     details: StoreDetails(
@@ -316,36 +324,172 @@ final class NavigationManager {
                     coordinate: coordinate
                 )
             )
-            
+
+            let html: String
+
+            // Apple -> map asset
+            if leg.destination.name == "Apple" {
+
+                html = markerHTML(
+                    imageName: "map"
+                )
+
+            } else {
+                let randomCount = Int.random(in: 2...9)
+
+                html = markerHTML(
+                    imageName: "location",
+                    count: randomCount
+                )
+            }
+
+            mapView.markers.add(
+                target: coordinate,
+                html: html,
+                options: AddMarkerOptions(
+                    interactive: .True,
+                    rank: .tier(.alwaysVisible)
+                )
+            ) { result in
+
+                switch result {
+
+                case .success:
+                    print("Marker Added")
+
+                case .failure(let error):
+                    print("Marker Error: \(error)")
+                }
+            }
+        }
+        
+        // Ensure final destination has an explicit annotation
+        if let finalCoordinate = legs.last?.directions.coordinates.last {
             addMarker(
-                title: "\(index + 1)",
-                subtitle: leg.destination.name,
-                color: index == 0 ? "#1871fb" : "#d92d20",
-                target: coordinate
+                title: "End",
+                subtitle: nil,
+                color: "#d92d20",
+                target: finalCoordinate,
+                compact: true
             )
         }
+    }
+    private func base64Image(named imageName: String) -> String? {
+
+        guard let image = UIImage(named: imageName),
+              let data = image.pngData() else {
+            print("Image not found: \(imageName)")
+            return nil
+        }
+
+        return data.base64EncodedString()
+    }
+
+    private func markerHTML(
+        imageName: String,
+        count: Int? = nil
+    ) -> String {
+
+        guard let base64 = base64Image(named: imageName) else {
+            return """
+            <div style="
+                width:40px;
+                height:40px;
+                background:red;
+                border-radius:20px;
+                display:flex;
+                align-items:center;
+                justify-content:center;
+                color:white;
+                font-weight:bold;
+            ">
+                X
+            </div>
+            """
+        }
+
+        let countHTML: String
+
+        if let count {
+            countHTML = """
+            <div style="
+                position:absolute;
+                top:4px;
+                left:10px;
+                width:20px;
+                height:20px;
+                border-radius:10px;
+                background:white;
+                display:flex;
+                align-items:center;
+                justify-content:center;
+                color:black;
+                font-size:12px;
+                font-weight:800;
+                box-shadow:0px 1px 3px rgba(0,0,0,0.25);
+            ">
+                \(count)
+            </div>
+            """
+        } else {
+            countHTML = ""
+        }
+
+        return """
+        <div style="
+            position:relative;
+            width:44px;
+            height:44px;
+        ">
+
+            <img
+                src="data:image/png;base64,\(base64)"
+                width="44"
+                height="44"
+            />
+
+            \(countHTML)
+
+        </div>
+        """
     }
     
     private func addMarker(
         title: String,
-        subtitle: String,
+        subtitle: String?,
         color: String,
-        target: Coordinate
+        target: Coordinate,
+        compact: Bool = false
     ) {
+        let gap = compact ? 4 : 6
+        let paddingY = compact ? 2 : 4
+        let paddingX = compact ? 6 : 8
+        let fontSize = compact ? 11 : 12
+        let badgeSize = compact ? 18 : 20
+        let borderRadius = compact ? 12 : 14
+        
+        let subtitleHTML: String = {
+            if let subtitle, !subtitle.isEmpty {
+                return "<span>\(subtitle)</span>"
+            } else {
+                return ""
+            }
+        }()
+        
         let markerHtml = """
         <div style="
             display: inline-flex;
             align-items: center;
-            gap: 6px;
+            gap: \(gap)px;
             background: white;
             border: 2px solid \(color);
-            border-radius: 14px;
+            border-radius: \(borderRadius)px;
             box-shadow: 0 2px 8px rgba(0,0,0,0.2);
             color: #111827;
             font-family: -apple-system, BlinkMacSystemFont, sans-serif;
-            font-size: 12px;
+            font-size: \(fontSize)px;
             font-weight: 600;
-            padding: 4px 8px;
+            padding: \(paddingY)px \(paddingX)px;
             white-space: nowrap;
         ">
             <span style="
@@ -354,11 +498,11 @@ final class NavigationManager {
                 border-radius: 50%;
                 color: white;
                 display: inline-flex;
-                height: 20px;
+                height: \(badgeSize)px;
                 justify-content: center;
-                min-width: 20px;
+                min-width: \(badgeSize)px;
             ">\(title)</span>
-            <span>\(subtitle)</span>
+            \(subtitleHTML)
         </div>
         """
         
@@ -371,7 +515,6 @@ final class NavigationManager {
             )
         ) { _ in }
     }
-    
     private func registerMarkerTapHandler() {
         mapView.on(Events.click) { [weak self] clickPayload in
             guard let self, let clickPayload else { return }
@@ -417,3 +560,4 @@ final class NavigationManager {
         }
     }
 }
+
