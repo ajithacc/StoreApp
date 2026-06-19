@@ -353,16 +353,6 @@ final class NavigationManager {
                 }
             }
         }
-        
-        if let finalCoordinate = legs.last?.directions.coordinates.last {
-            addMarker(
-                title: "End",
-                subtitle: nil,
-                color: "#d92d20",
-                target: finalCoordinate,
-                compact: true
-            )
-        }
     }
     
     // MARK: - Marker HTML Helpers

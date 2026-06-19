@@ -72,9 +72,9 @@ class MapViewModel: ObservableObject {
                             locationName: "Uniqlo"
                         ),
                         StoreItem(
-                            name: "Nespresso",
-                            imageName: "nespresso",
-                            locationName: "Nespresso"
+                            name: "Lululemon",
+                            imageName: "lululemon",
+                            locationName: "Lululemon"
                         )
                     ]
                     
